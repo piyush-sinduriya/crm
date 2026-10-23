@@ -34,6 +34,7 @@ interface SidebarProps {
   onOpenUserProfile: () => void;
   branding: BrandConfig;
   onOpenBrandingModal: () => void;
+  onOpenChannelConnectModal?: () => void;
   currentRole: UserRole;
   onRestrictedTabClick: (feature: string) => void;
   onToggleRole?: () => void;
@@ -53,6 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenUserProfile,
   branding,
   onOpenBrandingModal,
+  onOpenChannelConnectModal,
   currentRole,
   onRestrictedTabClick,
   onToggleRole,
@@ -295,6 +297,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               );
             })}
+
+            {onOpenChannelConnectModal && (
+              <button
+                type="button"
+                onClick={onOpenChannelConnectModal}
+                className="w-full mt-2.5 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-emerald-300 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/40 transition-all cursor-pointer shadow-sm active:scale-95"
+              >
+                <Zap className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span>⚡ Connect WhatsApp & Calls</span>
+              </button>
+            )}
           </div>
         </div>
 

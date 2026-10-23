@@ -48,6 +48,7 @@ import { BrandingModal } from './components/BrandingModal';
 import { ExportLeadsModal } from './components/ExportLeadsModal';
 import { ImportLeadsModal } from './components/ImportLeadsModal';
 import { IndiaMartSyncModal } from './components/IndiaMartSyncModal';
+import { ChannelConnectModal } from './components/ChannelConnectModal';
 import { DashboardView } from './components/DashboardView';
 import { DateRangeSelector } from './components/DateRangeSelector';
 import { PermissionRestrictedModal } from './components/PermissionRestrictedModal';
@@ -186,6 +187,7 @@ export default function App() {
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isIndiaMartModalOpen, setIsIndiaMartModalOpen] = useState(false);
+  const [isChannelConnectModalOpen, setIsChannelConnectModalOpen] = useState(false);
   const [isAddTeamModalOpen, setIsAddTeamModalOpen] = useState(false);
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
   const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
@@ -200,6 +202,46 @@ export default function App() {
       setToastMessage((prev) => (prev?.title === title ? null : prev));
     }, 4000);
   };
+
+  const handleLeadReceived = (newLead: Lead) => {
+    setLeads((prev) => {
+      if (prev.some((l) => l.id === newLead.id)) return prev;
+      return [newLead, ...prev];
+    });
+    setSelectedLeadId(newLead.id);
+    showToast(
+      `New Inbound ${newLead.channel.toUpperCase()} Lead!`,
+      `Inquiry received from ${newLead.contactName} (${newLead.leadScore.toUpperCase()})`
+    );
+  };
+
+  // Poll for real-time incoming leads from WhatsApp / Calls / Instagram webhooks
+  useEffect(() => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/leads-buffer');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success && Array.isArray(data.leads) && data.leads.length > 0) {
+          setLeads((prev) => {
+            const existingIds = new Set(prev.map((l) => l.id));
+            const fresh = data.leads.filter((l: Lead) => !existingIds.has(l.id));
+            if (fresh.length === 0) return prev;
+            return [...fresh, ...prev];
+          });
+          await fetch('/api/leads-buffer', { method: 'DELETE' });
+          showToast(
+            'Live Inbound Sync',
+            `Received ${data.leads.length} new real-time inquiries from connected channels.`
+          );
+        }
+      } catch (e) {
+        // silent
+      }
+    }, 12000);
+
+    return () => clearInterval(pollInterval);
+  }, []);
 
   const handleToggleTheme = () => {
     const nextTheme: ThemeMode = theme === 'dark' ? 'light' : 'dark';
@@ -1177,6 +1219,7 @@ export default function App() {
         currentRole={currentRole}
         onRestrictedTabClick={handleRestrictedAction}
         onToggleRole={handleToggleRole}
+        onOpenChannelConnectModal={() => setIsChannelConnectModalOpen(true)}
       />
 
       {/* Main Workspace Column */}
@@ -1226,6 +1269,7 @@ export default function App() {
               onOpenManualModal={() => setIsManualModalOpen(true)}
               onOpenImportModal={() => setIsImportModalOpen(true)}
               onOpenIndiaMartModal={() => setIsIndiaMartModalOpen(true)}
+              onOpenChannelConnectModal={() => setIsChannelConnectModalOpen(true)}
               onClearAllLeads={handleClearAllLeads}
               onSimulateInbound={handleSimulateInbound}
               currencySymbol={branding.currencySymbol || '₹'}
@@ -1498,6 +1542,13 @@ export default function App() {
         isOpen={isIndiaMartModalOpen}
         onClose={() => setIsIndiaMartModalOpen(false)}
         onImportLeads={handleImportLeads}
+      />
+
+      {/* Live Channels & Telephony Connection Hub Modal */}
+      <ChannelConnectModal
+        isOpen={isChannelConnectModalOpen}
+        onClose={() => setIsChannelConnectModalOpen(false)}
+        onLeadReceived={handleLeadReceived}
       />
 
       {/* Add Team Member Modal */}

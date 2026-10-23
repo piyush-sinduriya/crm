@@ -30,6 +30,7 @@ interface DashboardViewProps {
   onOpenManualModal: () => void;
   onOpenImportModal?: () => void;
   onOpenIndiaMartModal?: () => void;
+  onOpenChannelConnectModal?: () => void;
   onClearAllLeads?: () => void;
   onSimulateInbound: () => void;
   currencySymbol?: string;
@@ -43,6 +44,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenManualModal,
   onOpenImportModal,
   onOpenIndiaMartModal,
+  onOpenChannelConnectModal,
   onClearAllLeads,
   onSimulateInbound,
   currencySymbol = '₹',
@@ -97,19 +99,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </h3>
           </div>
           <p className="text-xs text-slate-300 mt-1 max-w-xl">
-            Connect your real business channels: Sync IndiaMART B2B inquiries via MAPI, receive live website/WhatsApp webhooks, or import your existing customer CSV.
+            Connect real business channels: WhatsApp Cloud API, Instagram DMs, Phone Calls/IVR, IndiaMART B2B MAPI, or import your existing customer CSV.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
+          {onOpenChannelConnectModal && (
+            <button
+              type="button"
+              onClick={onOpenChannelConnectModal}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg shadow-md shadow-emerald-600/20 transition-all cursor-pointer active:scale-95"
+            >
+              <Zap className="w-3.5 h-3.5 text-emerald-300 animate-pulse" />
+              <span>⚡ Connect WhatsApp, Instagram & Calls</span>
+            </button>
+          )}
+
           {onOpenIndiaMartModal && (
             <button
               type="button"
               onClick={onOpenIndiaMartModal}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg shadow-md shadow-emerald-600/20 transition-all cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-indigo-300 bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/40 rounded-lg transition-all cursor-pointer active:scale-95"
             >
-              <Radio className="w-3.5 h-3.5 animate-pulse" />
-              <span>⚡ Sync IndiaMART & Webhooks</span>
+              <Radio className="w-3.5 h-3.5 text-indigo-400" />
+              <span>IndiaMART Sync</span>
             </button>
           )}
 
