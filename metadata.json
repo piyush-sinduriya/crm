@@ -1,0 +1,6 @@
+{
+  "name": "OmniSync CRM - Omnichannel Lead Intelligence",
+  "description": "Modern dark-mode omnichannel CRM dashboard unifying inquiries across WhatsApp, Email, Meta, IndiaMART, YouTube, and Manual Entry with AI lead scoring, sentiment detection, and automated smart replies.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
