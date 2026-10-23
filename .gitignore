@@ -6,5 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
-
 .vercel
+.wa_auth/
+leads-buffer.json
