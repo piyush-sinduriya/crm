@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ChannelType, Lead } from '../types/crm';
 import { X, Sparkles, Building2, User, Phone, Mail, FileText, CheckCircle2 } from 'lucide-react';
 import { ChannelIcon } from './ChannelIcon';
-import { analyzeInquiryContent } from '../services/aiEngine';
+import { analyzeInquiryWithGemini } from '../services/aiEngine';
 
 interface ManualEntryModalProps {
   isOpen: boolean;
@@ -28,15 +28,15 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName.trim() || !inquiryNotes.trim()) return;
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      // Run AI analysis
-      const aiResult = analyzeInquiryContent(
+    try {
+      // Run AI analysis (Gemini or heuristic fallback)
+      const aiResult = await analyzeInquiryWithGemini(
         customerName.trim(),
         company.trim(),
         channel,
@@ -47,7 +47,7 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
         id: `lead-manual-${Date.now()}`,
         contactName: customerName.trim(),
         email: email.trim() || `${customerName.toLowerCase().replace(/\s+/g, '.')}@example.com`,
-        phone: phone.trim() || '+1 (555) 019-2834',
+        phone: phone.trim() || '+91 98000 00000',
         company: company.trim() || 'Private Account',
         channel,
         channelDetail:
@@ -83,7 +83,7 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
           {
             id: `note-${Date.now()}`,
             author: assignedAgentName || 'Marcus Vance',
-            text: 'Lead manually registered into OmniSync CRM with automated AI scoring triage.',
+            text: `Lead manually registered into OmniSync CRM with automated AI scoring triage (${aiResult.leadScore.toUpperCase()}).`,
             timestamp: 'Just now',
           },
         ],
@@ -93,9 +93,12 @@ export const ManualEntryModal: React.FC<ManualEntryModalProps> = ({
       };
 
       onSubmitLead(newLead);
-      setIsSubmitting(false);
       onClose();
-    }, 400);
+    } catch (err) {
+      console.error('Error in manual entry:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Quick fill preset templates for user convenience

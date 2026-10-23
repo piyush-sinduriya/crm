@@ -1,10 +1,11 @@
-import { Plus, Search, Radio, Bell, Sparkles, FileSpreadsheet, Crown, UserCheck, Shield, RefreshCw, Sun, Moon, User } from 'lucide-react';
+import { Plus, Search, Radio, Bell, Sparkles, FileSpreadsheet, Crown, UserCheck, Shield, RefreshCw, Sun, Moon, User, Upload } from 'lucide-react';
 import { NavigationTab, UserRole, ThemeMode, UserProfile } from '../types/crm';
 
 interface TopNavProps {
   currentTab: NavigationTab;
   onOpenManualModal: () => void;
   onOpenExportModal: () => void;
+  onOpenImportModal?: () => void;
   onSimulateInbound: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -22,7 +23,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   currentTab,
   onOpenManualModal,
   onOpenExportModal,
-  onSimulateInbound,
+  onOpenImportModal,
   searchQuery,
   onSearchChange,
   activeFilterCount,
@@ -140,6 +141,17 @@ export const TopNav: React.FC<TopNavProps> = ({
           <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
           <span className="hidden sm:inline">Export CSV</span>
         </button>
+
+        {onOpenImportModal && (
+          <button
+            onClick={onOpenImportModal}
+            title="Import leads from CSV, Excel, or IndiaMART"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-800/90 border border-slate-700/80 rounded-lg hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95 cursor-pointer"
+          >
+            <Upload className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="hidden sm:inline">Import CSV</span>
+          </button>
+        )}
 
         <button
           onClick={onSimulateInbound}

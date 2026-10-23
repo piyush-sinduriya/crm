@@ -1,4 +1,5 @@
 import { ChannelType, LeadScore, SentimentType } from '../types/crm';
+import { getStoredGeminiApiKey } from '../utils/storage';
 
 export interface AIAnalysisResult {
   leadScore: LeadScore;
@@ -8,18 +9,20 @@ export interface AIAnalysisResult {
   suggestedReply: string;
   tags: string[];
   estimatedValue: string;
+  isRealAI?: boolean;
 }
 
 export type ReplyTone = 'professional' | 'direct' | 'friendly' | 'detailed' | 'closer';
 
 /**
- * Heuristic and pattern analysis engine for immediate client-side AI processing
+ * Heuristic and pattern analysis engine for immediate client-side AI processing (Fallback & Offline)
  */
 export function analyzeInquiryContent(
   contactName: string,
   company: string,
   channel: ChannelType,
-  messageText: string
+  messageText: string,
+  tone: ReplyTone = 'professional'
 ): AIAnalysisResult {
   const text = messageText.toLowerCase();
 
@@ -115,7 +118,7 @@ export function analyzeInquiryContent(
   }
 
   // Generate Suggested Reply
-  const suggestedReply = generateQuickReply(contactName, company, channel, messageText, 'professional');
+  const suggestedReply = generateQuickReply(contactName, company, channel, messageText, tone);
 
   // Extract Tags
   const tags: string[] = [];
@@ -140,6 +143,7 @@ export function analyzeInquiryContent(
     suggestedReply,
     tags,
     estimatedValue,
+    isRealAI: false,
   };
 }
 
@@ -183,5 +187,92 @@ export function generateQuickReply(
     case 'professional':
     default:
       return `${channelGreeting} We have reviewed your request in detail. Our enterprise tier includes dedicated account management, rapid delivery SLAs, and customized commercial pricing. I have attached our formal specification brief and would appreciate the opportunity to schedule a brief 15-minute alignment call with your technical lead tomorrow. Looking forward to assisting you.`;
+  }
+}
+
+/**
+ * Real Google Gemini AI Lead Triage Engine
+ * If Gemini API Key is present, calls Gemini 2.5 Flash for genuine LLM intelligence.
+ * Otherwise gracefully falls back to Heuristic analysis.
+ */
+export async function analyzeInquiryWithGemini(
+  contactName: string,
+  company: string,
+  channel: ChannelType,
+  messageText: string,
+  tone: ReplyTone = 'professional'
+): Promise<AIAnalysisResult> {
+  const apiKey = getStoredGeminiApiKey();
+
+  // If no Gemini API key configured, use built-in heuristic engine
+  if (!apiKey) {
+    return analyzeInquiryContent(contactName, company, channel, messageText, tone);
+  }
+
+  try {
+    const prompt = `You are OmniSync CRM AI Lead Intelligence Engine.
+Analyze this inbound commercial inquiry and return a strictly valid JSON object.
+
+Contact Name: ${contactName || 'Valued Lead'}
+Company: ${company || 'Unspecified Organization'}
+Inbound Channel: ${channel}
+Desired Response Tone: ${tone} (Options: professional, direct, friendly, detailed, closer)
+Customer Inquiry Text:
+"""
+${messageText}
+"""
+
+Return JSON format with exactly these fields:
+{
+  "leadScore": "hot" | "warm" | "cold",
+  "scoreReason": "A concise 1-2 sentence business explanation of why this score was assigned based on urgency, volume, timeline, or clarity",
+  "sentiment": "positive" | "neutral" | "urgent_frustrated",
+  "summary": "A concise 1-2 sentence executive briefing for the sales representative",
+  "suggestedReply": "A polished, ready-to-send reply tailored to ${channel} and ${tone} tone addressing their specific request",
+  "tags": ["tag1", "tag2", "tag3"],
+  "estimatedValue": "Estimated deal value in INR (e.g. ₹5,00,000 or ₹25,00,000)"
+}
+Only output the JSON object, nothing else.`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.3,
+            responseMimeType: 'application/json',
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.warn('Gemini API call returned non-200, falling back to heuristic:', response.status);
+      return analyzeInquiryContent(contactName, company, channel, messageText, tone);
+    }
+
+    const data = await response.json();
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) {
+      return analyzeInquiryContent(contactName, company, channel, messageText, tone);
+    }
+
+    const parsed = JSON.parse(rawText);
+    return {
+      leadScore: parsed.leadScore === 'hot' || parsed.leadScore === 'cold' ? parsed.leadScore : 'warm',
+      scoreReason: parsed.scoreReason || 'Automated AI intent evaluation.',
+      sentiment: parsed.sentiment === 'positive' || parsed.sentiment === 'urgent_frustrated' ? parsed.sentiment : 'neutral',
+      summary: parsed.summary || `${contactName} sent an inquiry via ${channel}.`,
+      suggestedReply: parsed.suggestedReply || generateQuickReply(contactName, company, channel, messageText, tone),
+      tags: Array.isArray(parsed.tags) && parsed.tags.length > 0 ? parsed.tags : ['Qualified Lead'],
+      estimatedValue: parsed.estimatedValue || '₹10,00,000',
+      isRealAI: true,
+    };
+  } catch (error) {
+    console.error('Gemini AI analysis error, falling back to heuristic:', error);
+    return analyzeInquiryContent(contactName, company, channel, messageText, tone);
   }
 }

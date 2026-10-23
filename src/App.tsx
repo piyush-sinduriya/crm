@@ -46,6 +46,7 @@ import { AddTeamMemberModal } from './components/AddTeamMemberModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { BrandingModal } from './components/BrandingModal';
 import { ExportLeadsModal } from './components/ExportLeadsModal';
+import { ImportLeadsModal } from './components/ImportLeadsModal';
 import { DashboardView } from './components/DashboardView';
 import { DateRangeSelector } from './components/DateRangeSelector';
 import { PermissionRestrictedModal } from './components/PermissionRestrictedModal';
@@ -58,26 +59,45 @@ import {
   getTodayDateString,
 } from './utils/csvExport';
 import { analyzeInquiryContent } from './services/aiEngine';
+import {
+  loadStoredLeads,
+  saveStoredLeads,
+  loadStoredActivities,
+  saveStoredActivities,
+  loadStoredTeam,
+  saveStoredTeam,
+  loadStoredBranding,
+  saveStoredBranding,
+  loadStoredTemplates,
+  saveStoredTemplates,
+  loadStoredAutomation,
+  saveStoredAutomation,
+  resetAllStorageToDemo,
+  clearAllLeadsStorage,
+} from './utils/storage';
 import { Sparkles, CheckCircle2, Bell, Radio, FileSpreadsheet, Settings2 } from 'lucide-react';
 
 export default function App() {
-  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
-  const [activities, setActivities] = useState<ActivityItem[]>(INITIAL_ACTIVITIES);
-  const [team, setTeam] = useState<TeamMember[]>(INITIAL_TEAM);
-  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(
-    INITIAL_LEADS[0]?.id || null
-  );
+  const [leads, setLeads] = useState<Lead[]>(() => loadStoredLeads());
+  const [activities, setActivities] = useState<ActivityItem[]>(() => loadStoredActivities());
+  const [team, setTeam] = useState<TeamMember[]>(() => loadStoredTeam());
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(() => {
+    const stored = loadStoredLeads();
+    return stored[0]?.id || null;
+  });
   const [currentTab, setCurrentTab] = useState<NavigationTab>('dashboard');
 
   // Custom Logo & Branding State
-  const [branding, setBranding] = useState<BrandConfig>({
-    name: 'OmniSync',
-    tag: 'CRM',
-    subtitle: 'Omnichannel Intelligence',
-    logoUrl: undefined,
-    currency: 'INR',
-    currencySymbol: '₹',
-  });
+  const [branding, setBranding] = useState<BrandConfig>(() =>
+    loadStoredBranding({
+      name: 'OmniSync',
+      tag: 'CRM',
+      subtitle: 'Omnichannel Intelligence',
+      logoUrl: undefined,
+      currency: 'INR',
+      currencySymbol: '₹',
+    })
+  );
 
   // Logged-in User Profile State (Marcus Vance)
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile>({
@@ -115,10 +135,35 @@ export default function App() {
   });
 
   // Automated Messaging & Workflows State
-  const [templates, setTemplates] = useState<MessageTemplate[]>(DEFAULT_TEMPLATES);
-  const [automationSettings, setAutomationSettings] = useState<AutomationSettings>(
-    DEFAULT_AUTOMATION_SETTINGS
+  const [templates, setTemplates] = useState<MessageTemplate[]>(() => loadStoredTemplates());
+  const [automationSettings, setAutomationSettings] = useState<AutomationSettings>(() =>
+    loadStoredAutomation()
   );
+
+  // Persistent Storage Auto-Save Effects
+  useEffect(() => {
+    saveStoredLeads(leads);
+  }, [leads]);
+
+  useEffect(() => {
+    saveStoredActivities(activities);
+  }, [activities]);
+
+  useEffect(() => {
+    saveStoredTeam(team);
+  }, [team]);
+
+  useEffect(() => {
+    saveStoredBranding(branding);
+  }, [branding]);
+
+  useEffect(() => {
+    saveStoredTemplates(templates);
+  }, [templates]);
+
+  useEffect(() => {
+    saveStoredAutomation(automationSettings);
+  }, [automationSettings]);
 
   // Role-Based Access Control (RBAC) State
   const [currentRole, setCurrentRole] = useState<UserRole>('admin');
@@ -138,6 +183,7 @@ export default function App() {
 
   // Modals & Notifications
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isAddTeamModalOpen, setIsAddTeamModalOpen] = useState(false);
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
   const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
@@ -716,6 +762,45 @@ export default function App() {
     );
   };
 
+  // Bulk CSV Import Handler
+  const handleImportLeads = (newLeads: Lead[]) => {
+    setLeads((prev) => [...newLeads, ...prev]);
+    if (newLeads.length > 0) {
+      setSelectedLeadId(newLeads[0].id);
+      const newAct: ActivityItem = {
+        id: `act-${Date.now()}`,
+        leadId: newLeads[0].id,
+        leadName: `${newLeads.length} Leads`,
+        channel: 'manual',
+        action: 'bulk_import',
+        description: `Bulk imported ${newLeads.length} commercial inquiries with automated AI scoring.`,
+        timestamp: 'Just now',
+        timestampMs: Date.now(),
+        user: currentUserProfile.name,
+      };
+      setActivities((prev) => [newAct, ...prev]);
+      showToast('Leads Imported', `Successfully added ${newLeads.length} leads with AI evaluation`);
+    }
+  };
+
+  // Reset to Demo Data
+  const handleResetToDemo = () => {
+    resetAllStorageToDemo();
+    setLeads(loadStoredLeads());
+    setActivities(loadStoredActivities());
+    setTeam(loadStoredTeam());
+    showToast('Demo Restored', 'Restored initial sample leads and activities.');
+  };
+
+  // Clear All Leads
+  const handleClearAllLeads = () => {
+    clearAllLeadsStorage();
+    setLeads([]);
+    setActivities([]);
+    setSelectedLeadId(null);
+    showToast('CRM Cleared', 'All leads removed. Ready for your real business inquiries.');
+  };
+
   // Team Management Handlers
   const handleAddTeamMember = (newMember: TeamMember) => {
     setTeam((prev) => [newMember, ...prev]);
@@ -1105,6 +1190,7 @@ export default function App() {
             }
             setIsExportModalOpen(true);
           }}
+          onOpenImportModal={() => setIsImportModalOpen(true)}
           onSimulateInbound={handleSimulateInbound}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -1377,6 +1463,9 @@ export default function App() {
               }}
               accentColor={accentColor}
               onUpdateAccentColor={handleUpdateAccentColor}
+              onResetToDemo={handleResetToDemo}
+              onClearAllLeads={handleClearAllLeads}
+              totalLeadsCount={leads.length}
             />
           )}
         </main>
@@ -1387,6 +1476,14 @@ export default function App() {
         isOpen={isManualModalOpen}
         onClose={() => setIsManualModalOpen(false)}
         onSubmitLead={handleAddManualLead}
+        assignedAgentName={currentUserProfile.name}
+      />
+
+      {/* Import Leads via CSV Modal */}
+      <ImportLeadsModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportLeads={handleImportLeads}
         assignedAgentName={currentUserProfile.name}
       />
 

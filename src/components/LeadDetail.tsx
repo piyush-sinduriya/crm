@@ -32,7 +32,8 @@ import {
   Trash2,
   Lock,
 } from 'lucide-react';
-import { generateQuickReply, ReplyTone } from '../services/aiEngine';
+import { generateQuickReply, analyzeInquiryWithGemini, ReplyTone } from '../services/aiEngine';
+import { getStoredGeminiApiKey } from '../utils/storage';
 
 interface LeadDetailProps {
   lead: Lead;
@@ -89,14 +90,26 @@ export const LeadDetail: React.FC<LeadDetailProps> = ({
   const channelCfg = getChannelConfig(lead.channel);
 
   // Clean phone number for WhatsApp link
-  const rawDigits = lead.phone.replace(/[^0-9]/g, '');
+  const rawDigits = lead.phone ? lead.phone.replace(/[^0-9]/g, '') : '';
   const cleanPhone = rawDigits.startsWith('91') ? rawDigits : rawDigits.length === 10 ? `91${rawDigits}` : rawDigits;
+  const hasPhone = rawDigits.length >= 10;
+  const hasEmail = Boolean(lead.email && lead.email.includes('@'));
+  const hasGeminiKey = Boolean(getStoredGeminiApiKey());
 
   // Handle regenerating AI reply with chosen tone
-  const handleRegenerateReply = (tone?: ReplyTone) => {
+  const handleRegenerateReply = async (tone?: ReplyTone) => {
     const toneToUse = tone || selectedTone;
     setIsRegenerating(true);
-    setTimeout(() => {
+    try {
+      const result = await analyzeInquiryWithGemini(
+        lead.contactName,
+        lead.company,
+        lead.channel,
+        lead.message,
+        toneToUse
+      );
+      setDraftReply(result.suggestedReply);
+    } catch (err) {
       const generated = generateQuickReply(
         lead.contactName,
         lead.company,
@@ -105,8 +118,9 @@ export const LeadDetail: React.FC<LeadDetailProps> = ({
         toneToUse
       );
       setDraftReply(generated);
+    } finally {
       setIsRegenerating(false);
-    }, 450);
+    }
   };
 
   const handleToneChange = (tone: ReplyTone) => {
@@ -116,6 +130,23 @@ export const LeadDetail: React.FC<LeadDetailProps> = ({
 
   const handleSend = () => {
     if (!draftReply.trim()) return;
+    onSendReply(lead.id, draftReply.trim());
+    setDraftReply('');
+  };
+
+  const handleSendViaWhatsApp = () => {
+    if (!draftReply.trim()) return;
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(draftReply.trim())}`;
+    window.open(url, '_blank');
+    onSendReply(lead.id, draftReply.trim());
+    setDraftReply('');
+  };
+
+  const handleSendViaEmail = () => {
+    if (!draftReply.trim()) return;
+    const subject = encodeURIComponent(`Regarding your inquiry - ${lead.company || lead.contactName}`);
+    const body = encodeURIComponent(draftReply.trim());
+    window.open(`mailto:${lead.email}?subject=${subject}&body=${body}`, '_blank');
     onSendReply(lead.id, draftReply.trim());
     setDraftReply('');
   };
@@ -654,31 +685,71 @@ export const LeadDetail: React.FC<LeadDetailProps> = ({
               </button>
             </div>
 
-            {/* Action Buttons: Regenerate AI Reply + Send Reply */}
+            {/* Action Buttons: Regenerate AI Reply + Real Dispatch Actions */}
             <div className="flex items-center justify-between gap-3 pt-1 flex-wrap">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => handleRegenerateReply()}
                   disabled={isRegenerating}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   <RefreshCw
                     className={`w-3.5 h-3.5 ${isRegenerating ? 'animate-spin text-indigo-400' : ''}`}
                   />
-                  <span>{isRegenerating ? 'Generating...' : 'Regenerate AI Reply'}</span>
+                  <span>
+                    {isRegenerating
+                      ? 'Analyzing with AI...'
+                      : hasGeminiKey
+                      ? 'Gemini 2.5 Re-Analyze'
+                      : 'Regenerate AI Reply'}
+                  </span>
                 </button>
+                {hasGeminiKey && (
+                  <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Sparkles className="w-2.5 h-2.5" /> Gemini
+                  </span>
+                )}
               </div>
 
-              <button
-                type="button"
-                onClick={handleSend}
-                disabled={!draftReply.trim()}
-                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-md shadow-indigo-600/30 transition-all active:scale-95"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>Send Reply via {channelCfg.shortLabel}</span>
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                {hasPhone && (
+                  <button
+                    type="button"
+                    onClick={handleSendViaWhatsApp}
+                    disabled={!draftReply.trim()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer"
+                    title="Send message directly to customer's WhatsApp Web and log in CRM"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Send on WhatsApp</span>
+                  </button>
+                )}
+
+                {hasEmail && (
+                  <button
+                    type="button"
+                    onClick={handleSendViaEmail}
+                    disabled={!draftReply.trim()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm shadow-sky-600/20 transition-all active:scale-95 cursor-pointer"
+                    title="Open in email client and log in CRM"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Send via Email</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleSend}
+                  disabled={!draftReply.trim()}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-md shadow-indigo-600/30 transition-all active:scale-95 cursor-pointer"
+                  title="Log and record message as dispatched inside CRM"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Log in CRM</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

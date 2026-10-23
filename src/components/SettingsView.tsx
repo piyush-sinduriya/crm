@@ -39,10 +39,13 @@ import {
   Lock,
   Sun,
   Moon,
+  Database,
+  Key,
 } from 'lucide-react';
 import { replaceDynamicTags } from '../utils/automationEngine';
 import { UserRole, ThemeMode, AccentColor } from '../types/crm';
 import { ACCENT_COLORS } from '../utils/themeConfig';
+import { getStoredGeminiApiKey, setStoredGeminiApiKey } from '../utils/storage';
 
 interface SettingsViewProps {
   branding: BrandConfig;
@@ -60,6 +63,9 @@ interface SettingsViewProps {
   onUpdateTheme?: (mode: ThemeMode) => void;
   accentColor?: AccentColor;
   onUpdateAccentColor?: (accent: AccentColor) => void;
+  onResetToDemo?: () => void;
+  onClearAllLeads?: () => void;
+  totalLeadsCount?: number;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -78,9 +84,68 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onUpdateTheme,
   accentColor = 'indigo',
   onUpdateAccentColor,
+  onResetToDemo,
+  onClearAllLeads,
+  totalLeadsCount = 0,
 }) => {
   const isRep = currentRole === 'sales_rep';
-  const [activeTab, setActiveTab] = useState<'appearance' | 'branding' | 'automation' | 'templates' | 'webhooks'>('appearance');
+  const [activeTab, setActiveTab] = useState<'appearance' | 'ai' | 'automation' | 'templates' | 'branding' | 'webhooks' | 'data'>('appearance');
+
+  // Gemini API Key State
+  const [geminiKey, setGeminiKey] = useState(getStoredGeminiApiKey());
+  const [showKey, setShowKey] = useState(false);
+  const [testingKey, setTestingKey] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [keySaved, setKeySaved] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  const handleSaveGeminiKey = () => {
+    setStoredGeminiApiKey(geminiKey);
+    setKeySaved(true);
+    setTestResult(null);
+    setTimeout(() => setKeySaved(false), 2500);
+  };
+
+  const handleTestGeminiKey = async () => {
+    if (!geminiKey.trim()) {
+      setTestResult({ success: false, message: 'Please enter a Gemini API Key first.' });
+      return;
+    }
+    setTestingKey(true);
+    setTestResult(null);
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Respond with the single word CONNECTED.' }] }],
+          }),
+        }
+      );
+      if (res.ok) {
+        setStoredGeminiApiKey(geminiKey.trim());
+        setTestResult({
+          success: true,
+          message: 'Connected Successfully! Google Gemini 2.5 Flash is verified & active.',
+        });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setTestResult({
+          success: false,
+          message: `API Error (${res.status}): ${data?.error?.message || 'Invalid API key or unauthorized.'}`,
+        });
+      }
+    } catch (err: any) {
+      setTestResult({
+        success: false,
+        message: `Network error connecting to Google Gemini: ${err?.message || 'Please check connection.'}`,
+      });
+    } finally {
+      setTestingKey(false);
+    }
+  };
 
   const [webhookStatuses, setWebhookStatuses] = useState<Record<ChannelType, boolean>>({
     whatsapp: true,
@@ -324,7 +389,33 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           }`}
         >
           <Sun className="w-3.5 h-3.5 text-amber-300" />
-          <span>Theme & Accent Color</span>
+          <span>Theme & Accent</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('ai')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'ai'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+          <span>Google Gemini AI</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('data')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'data'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+          }`}
+        >
+          <Database className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Storage & Data ({totalLeadsCount})</span>
         </button>
 
         <button
@@ -337,7 +428,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           }`}
         >
           <Zap className="w-3.5 h-3.5 text-indigo-200" />
-          <span>Automated Messaging & SLA Workflows</span>
+          <span>Automated Messaging</span>
         </button>
 
         <button
@@ -350,7 +441,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           }`}
         >
           <FileText className="w-3.5 h-3.5 text-indigo-200" />
-          <span>Message & Email Templates ({templates.length})</span>
+          <span>Templates ({templates.length})</span>
         </button>
 
         <button
@@ -363,7 +454,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           }`}
         >
           <Palette className="w-3.5 h-3.5 text-indigo-200" />
-          <span>Logo, Branding & Currency (₹)</span>
+          <span>Branding & Currency</span>
         </button>
 
         <button
@@ -376,7 +467,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           }`}
         >
           <Globe className="w-3.5 h-3.5 text-indigo-200" />
-          <span>Inbound Webhooks & AI Model</span>
+          <span>Webhooks & Integrations</span>
         </button>
       </div>
 
@@ -669,6 +760,231 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* SECTION: GOOGLE GEMINI AI CONFIGURATION */}
+      {/* ============================================================== */}
+      {activeTab === 'ai' && (
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-indigo-950/70 via-slate-900 to-indigo-900/30 border border-indigo-500/30 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400">
+                  <Sparkles className="w-5 h-5" />
+                </span>
+                <h3 className="text-sm font-bold text-white tracking-tight">
+                  Google Gemini AI Lead Intelligence Engine
+                </h3>
+              </div>
+              <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
+                Connect your real <strong>Google Gemini API Key</strong> to activate deep LLM intent extraction, genuine sentiment analysis, commercial scoring, and dynamic personalized replies.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">Status:</span>
+              <span
+                className={`px-3 py-1 rounded-lg text-xs font-semibold border flex items-center gap-1.5 ${
+                  geminiKey
+                    ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800'
+                    : 'bg-amber-950/60 text-amber-300 border-amber-800'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full ${geminiKey ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                <span>{geminiKey ? 'Gemini 2.5 Active' : 'Heuristic Rules Active'}</span>
+              </span>
+            </div>
+          </div>
+
+          {/* API Key Configuration Card */}
+          <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Key className="w-4 h-4 text-indigo-400" />
+                  <span>Google Gemini API Key</span>
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Your key is securely stored in your browser's private local storage.
+                </p>
+              </div>
+
+              <a
+                href="https://aistudio.google.com/app/apikey"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition-colors"
+              >
+                <span>Get Free Gemini Key ↗</span>
+              </a>
+            </div>
+
+            <div className="space-y-3">
+              <div className="relative">
+                <input
+                  type={showKey ? 'text' : 'password'}
+                  value={geminiKey}
+                  onChange={(e) => setGeminiKey(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-indigo-500 pr-24"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800/80 cursor-pointer"
+                >
+                  {showKey ? 'Hide' : 'Show'}
+                </button>
+              </div>
+
+              {testResult && (
+                <div
+                  className={`p-3 rounded-lg border text-xs flex items-center gap-2 ${
+                    testResult.success
+                      ? 'bg-emerald-950/40 border-emerald-800 text-emerald-300'
+                      : 'bg-rose-950/40 border-rose-800 text-rose-300'
+                  }`}
+                >
+                  {testResult.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  )}
+                  <span>{testResult.message}</span>
+                </div>
+              )}
+
+              {keySaved && (
+                <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-800 text-xs text-emerald-300 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>API Key saved successfully! All inquiries will now use Gemini 2.5 Flash.</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-2 flex-wrap gap-2">
+                <span className="text-[11px] text-slate-500">
+                  Model: <strong className="text-slate-300">gemini-2.5-flash</strong> (Ultra-fast, generous free tier)
+                </span>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleTestGeminiKey}
+                    disabled={testingKey || !geminiKey.trim()}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg border border-slate-700 transition-all cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${testingKey ? 'animate-spin text-indigo-400' : ''}`} />
+                    <span>{testingKey ? 'Testing Connection...' : 'Test Connection'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveGeminiKey}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg shadow-md shadow-indigo-600/30 transition-all active:scale-95 cursor-pointer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save Key</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* SECTION: STORAGE & DATA MANAGEMENT */}
+      {/* ============================================================== */}
+      {activeTab === 'data' && (
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400">
+                  <Database className="w-5 h-5" />
+                </span>
+                <h3 className="text-sm font-bold text-white tracking-tight">
+                  Persistent Storage & Lead Data Management
+                </h3>
+              </div>
+              <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
+                All changes, new inquiries, notes, conversation replies, and pipeline stages are <strong>automatically persisted in your browser's LocalStorage</strong>. Page refresh will never lose your data.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">Total Leads:</span>
+              <span className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-950/60 text-emerald-300 border border-emerald-800">
+                {totalLeadsCount} Leads
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Clear All Leads Card */}
+            <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-5 space-y-3">
+              <div className="flex items-center gap-2.5 text-rose-400">
+                <Trash2 className="w-5 h-5" />
+                <h4 className="text-sm font-bold text-white">Clear All Leads & Start Clean</h4>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Remove all demo leads and sample conversations to start with a blank CRM ready for your real business inquiries and CSV import.
+              </p>
+
+              {confirmClear ? (
+                <div className="space-y-2 pt-2">
+                  <p className="text-xs text-amber-300 font-semibold">Are you sure? This will delete all current inquiries.</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClearAllLeads?.();
+                        setConfirmClear(false);
+                      }}
+                      className="px-3 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-lg transition-all cursor-pointer"
+                    >
+                      Yes, Clear All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmClear(false)}
+                      className="px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmClear(true)}
+                  className="px-3.5 py-2 text-xs font-semibold text-rose-300 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/30 rounded-lg transition-all cursor-pointer active:scale-95"
+                >
+                  Empty CRM Leads
+                </button>
+              )}
+            </div>
+
+            {/* Restore Demo Data Card */}
+            <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-5 space-y-3">
+              <div className="flex items-center gap-2.5 text-indigo-400">
+                <RotateCcw className="w-5 h-5" />
+                <h4 className="text-sm font-bold text-white">Restore Sample Demo Leads</h4>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Re-load the pre-configured omnichannel demo inquiries (IndiaMART, WhatsApp, Meta, YouTube) if you want to test or demonstrate CRM features.
+              </p>
+              <button
+                type="button"
+                onClick={onResetToDemo}
+                className="px-3.5 py-2 text-xs font-semibold text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-600 border border-indigo-500/30 rounded-lg transition-all cursor-pointer active:scale-95"
+              >
+                Restore 8 Demo Inquiries
+              </button>
             </div>
           </div>
         </div>
