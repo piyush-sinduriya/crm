@@ -49,6 +49,7 @@ import { ExportLeadsModal } from './components/ExportLeadsModal';
 import { ImportLeadsModal } from './components/ImportLeadsModal';
 import { IndiaMartSyncModal } from './components/IndiaMartSyncModal';
 import { ChannelConnectModal } from './components/ChannelConnectModal';
+import { WhatsAppQrModal } from './components/WhatsAppQrModal';
 import { DashboardView } from './components/DashboardView';
 import { DateRangeSelector } from './components/DateRangeSelector';
 import { PermissionRestrictedModal } from './components/PermissionRestrictedModal';
@@ -188,6 +189,7 @@ export default function App() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isIndiaMartModalOpen, setIsIndiaMartModalOpen] = useState(false);
   const [isChannelConnectModalOpen, setIsChannelConnectModalOpen] = useState(false);
+  const [isWhatsAppQrModalOpen, setIsWhatsAppQrModalOpen] = useState(false);
   const [isAddTeamModalOpen, setIsAddTeamModalOpen] = useState(false);
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
   const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
@@ -1220,6 +1222,7 @@ export default function App() {
         onRestrictedTabClick={handleRestrictedAction}
         onToggleRole={handleToggleRole}
         onOpenChannelConnectModal={() => setIsChannelConnectModalOpen(true)}
+        onOpenWhatsAppQrModal={() => setIsWhatsAppQrModalOpen(true)}
       />
 
       {/* Main Workspace Column */}
@@ -1237,6 +1240,7 @@ export default function App() {
           }}
           onOpenImportModal={() => setIsImportModalOpen(true)}
           onOpenIndiaMartModal={() => setIsIndiaMartModalOpen(true)}
+          onOpenWhatsAppQrModal={() => setIsWhatsAppQrModalOpen(true)}
           onSimulateInbound={handleSimulateInbound}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -1270,6 +1274,7 @@ export default function App() {
               onOpenImportModal={() => setIsImportModalOpen(true)}
               onOpenIndiaMartModal={() => setIsIndiaMartModalOpen(true)}
               onOpenChannelConnectModal={() => setIsChannelConnectModalOpen(true)}
+              onOpenWhatsAppQrModal={() => setIsWhatsAppQrModalOpen(true)}
               onClearAllLeads={handleClearAllLeads}
               onSimulateInbound={handleSimulateInbound}
               currencySymbol={branding.currencySymbol || '₹'}
@@ -1548,6 +1553,14 @@ export default function App() {
       <ChannelConnectModal
         isOpen={isChannelConnectModalOpen}
         onClose={() => setIsChannelConnectModalOpen(false)}
+        onLeadReceived={handleLeadReceived}
+        onOpenWhatsAppQrModal={() => setIsWhatsAppQrModalOpen(true)}
+      />
+
+      {/* WhatsApp Web QR Code Linker Modal */}
+      <WhatsAppQrModal
+        isOpen={isWhatsAppQrModalOpen}
+        onClose={() => setIsWhatsAppQrModalOpen(false)}
         onLeadReceived={handleLeadReceived}
       />
 

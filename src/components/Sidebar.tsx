@@ -17,6 +17,7 @@ import {
   Lock,
   Crown,
   UserCheck,
+  QrCode,
 } from 'lucide-react';
 import { ChannelIcon } from './ChannelIcon';
 
@@ -35,6 +36,7 @@ interface SidebarProps {
   branding: BrandConfig;
   onOpenBrandingModal: () => void;
   onOpenChannelConnectModal?: () => void;
+  onOpenWhatsAppQrModal?: () => void;
   currentRole: UserRole;
   onRestrictedTabClick: (feature: string) => void;
   onToggleRole?: () => void;
@@ -55,6 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   branding,
   onOpenBrandingModal,
   onOpenChannelConnectModal,
+  onOpenWhatsAppQrModal,
   currentRole,
   onRestrictedTabClick,
   onToggleRole,
@@ -298,14 +301,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
               );
             })}
 
+            {onOpenWhatsAppQrModal && (
+              <button
+                type="button"
+                onClick={onOpenWhatsAppQrModal}
+                className="w-full mt-2.5 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-slate-950 bg-[#25D366] hover:bg-emerald-400 transition-all cursor-pointer shadow-md shadow-emerald-500/25 active:scale-95"
+              >
+                <QrCode className="w-3.5 h-3.5 text-slate-950" />
+                <span>📱 Scan WhatsApp QR</span>
+              </button>
+            )}
+
             {onOpenChannelConnectModal && (
               <button
                 type="button"
                 onClick={onOpenChannelConnectModal}
-                className="w-full mt-2.5 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-emerald-300 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/40 transition-all cursor-pointer shadow-sm active:scale-95"
+                className="w-full mt-1.5 flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-300 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/40 transition-all cursor-pointer shadow-sm active:scale-95"
               >
                 <Zap className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                <span>⚡ Connect WhatsApp & Calls</span>
+                <span>⚡ Channels & Calls Webhook</span>
               </button>
             )}
           </div>

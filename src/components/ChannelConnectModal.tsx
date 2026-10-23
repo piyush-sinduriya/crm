@@ -28,12 +28,14 @@ interface ChannelConnectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLeadReceived: (lead: Lead) => void;
+  onOpenWhatsAppQrModal?: () => void;
 }
 
 export const ChannelConnectModal: React.FC<ChannelConnectModalProps> = ({
   isOpen,
   onClose,
   onLeadReceived,
+  onOpenWhatsAppQrModal,
 }) => {
   const [activeTab, setActiveTab] = useState<'whatsapp' | 'instagram' | 'calls' | 'indiamart' | 'website'>('whatsapp');
 
@@ -355,11 +357,45 @@ export const ChannelConnectModal: React.FC<ChannelConnectModalProps> = ({
           {/* ======================================================= */}
           {activeTab === 'whatsapp' && (
             <div className="space-y-4">
+              {/* WhatsApp Web QR Option Banner (Preferred simple mode) */}
+              <div className="bg-gradient-to-r from-emerald-950/90 via-slate-900 to-slate-900 border-2 border-emerald-500/40 rounded-xl p-4 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#25D366] text-slate-950 flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/25">
+                    <QrCode className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                      Easy WhatsApp Web Connection (QR Code)
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        RECOMMENDED
+                      </span>
+                    </h4>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      No Meta Developer account or webhooks required. Just scan the QR code from your phone like WhatsApp Web!
+                    </p>
+                  </div>
+                </div>
+
+                {onOpenWhatsAppQrModal && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenWhatsAppQrModal();
+                    }}
+                    className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-slate-950 bg-[#25D366] hover:bg-emerald-400 rounded-lg shadow-md shadow-emerald-500/20 transition-all cursor-pointer active:scale-95 shrink-0 self-start sm:self-center"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    <span>📱 Open WhatsApp QR Scanner</span>
+                  </button>
+                )}
+              </div>
+
               <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-emerald-400" />
-                    Official Meta WhatsApp Business Cloud API
+                    Official Meta WhatsApp Business Cloud API (Advanced Webhook Mode)
                   </h3>
                   <a
                     href="https://developers.facebook.com/apps"

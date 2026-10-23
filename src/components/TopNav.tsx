@@ -1,4 +1,4 @@
-import { Plus, Search, Radio, Bell, Sparkles, FileSpreadsheet, Crown, UserCheck, Shield, RefreshCw, Sun, Moon, User, Upload } from 'lucide-react';
+import { Plus, Search, Radio, Bell, Sparkles, FileSpreadsheet, Crown, UserCheck, Shield, RefreshCw, Sun, Moon, User, Upload, QrCode } from 'lucide-react';
 import { NavigationTab, UserRole, ThemeMode, UserProfile } from '../types/crm';
 
 interface TopNavProps {
@@ -7,6 +7,7 @@ interface TopNavProps {
   onOpenExportModal: () => void;
   onOpenImportModal?: () => void;
   onOpenIndiaMartModal?: () => void;
+  onOpenWhatsAppQrModal?: () => void;
   onSimulateInbound: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -26,6 +27,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   onOpenExportModal,
   onOpenImportModal,
   onOpenIndiaMartModal,
+  onOpenWhatsAppQrModal,
   onSimulateInbound,
   searchQuery,
   onSearchChange,
@@ -156,6 +158,17 @@ export const TopNav: React.FC<TopNavProps> = ({
           </button>
         )}
 
+        {onOpenWhatsAppQrModal && (
+          <button
+            onClick={onOpenWhatsAppQrModal}
+            title="Scan QR Code to link your WhatsApp easily (WhatsApp Web mode)"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-950 bg-[#25D366] hover:bg-emerald-400 rounded-lg shadow-md shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer"
+          >
+            <QrCode className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Scan WhatsApp QR</span>
+          </button>
+        )}
+
         {onOpenIndiaMartModal && (
           <button
             onClick={onOpenIndiaMartModal}
@@ -163,7 +176,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 rounded-lg hover:bg-emerald-600 hover:text-white transition-all shadow-sm active:scale-95 cursor-pointer"
           >
             <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-            <span className="hidden md:inline">⚡ IndiaMART & Webhooks</span>
+            <span className="hidden md:inline">⚡ Channels API</span>
           </button>
         )}
 
