@@ -16,6 +16,10 @@ import {
   MessageSquare,
   Sparkles,
   Zap,
+  Upload,
+  Radio,
+  Trash2,
+  Plus,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -24,6 +28,9 @@ interface DashboardViewProps {
   onSelectLeadAndGoToInbox: (leadId: string) => void;
   onNavigateToTab: (tab: 'inbox' | 'leads' | 'analytics' | 'team') => void;
   onOpenManualModal: () => void;
+  onOpenImportModal?: () => void;
+  onOpenIndiaMartModal?: () => void;
+  onClearAllLeads?: () => void;
   onSimulateInbound: () => void;
   currencySymbol?: string;
 }
@@ -34,6 +41,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSelectLeadAndGoToInbox,
   onNavigateToTab,
   onOpenManualModal,
+  onOpenImportModal,
+  onOpenIndiaMartModal,
+  onClearAllLeads,
   onSimulateInbound,
   currencySymbol = '₹',
 }) => {
@@ -75,6 +85,68 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="space-y-6 pb-8">
+      {/* 0. Real Business Lead Hub Action Bar */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="p-1 rounded-md bg-emerald-500/20 text-emerald-400">
+              <Zap className="w-4 h-4" />
+            </span>
+            <h3 className="text-sm font-bold text-white tracking-tight">
+              Live Inbound Channels & Lead Ingestion Hub
+            </h3>
+          </div>
+          <p className="text-xs text-slate-300 mt-1 max-w-xl">
+            Connect your real business channels: Sync IndiaMART B2B inquiries via MAPI, receive live website/WhatsApp webhooks, or import your existing customer CSV.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {onOpenIndiaMartModal && (
+            <button
+              type="button"
+              onClick={onOpenIndiaMartModal}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg shadow-md shadow-emerald-600/20 transition-all cursor-pointer active:scale-95"
+            >
+              <Radio className="w-3.5 h-3.5 animate-pulse" />
+              <span>⚡ Sync IndiaMART & Webhooks</span>
+            </button>
+          )}
+
+          {onOpenImportModal && (
+            <button
+              type="button"
+              onClick={onOpenImportModal}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-all cursor-pointer"
+            >
+              <Upload className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Import CSV Leads</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={onOpenManualModal}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg shadow-md shadow-indigo-600/30 transition-all cursor-pointer active:scale-95"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>+ Add New Lead</span>
+          </button>
+
+          {onClearAllLeads && leads.length > 0 && (
+            <button
+              type="button"
+              onClick={onClearAllLeads}
+              title="Remove sample demo leads to start clean with only your real business leads"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-400 hover:text-rose-300 hover:bg-rose-950/40 border border-slate-800 rounded-lg transition-all cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span className="hidden sm:inline">Clean Demo Data</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* 1. Top KPI Summary Cards */}
       <AnalyticsCards leads={leads} />
 

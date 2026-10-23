@@ -6,6 +6,7 @@ interface TopNavProps {
   onOpenManualModal: () => void;
   onOpenExportModal: () => void;
   onOpenImportModal?: () => void;
+  onOpenIndiaMartModal?: () => void;
   onSimulateInbound: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -24,6 +25,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   onOpenManualModal,
   onOpenExportModal,
   onOpenImportModal,
+  onOpenIndiaMartModal,
   onSimulateInbound,
   searchQuery,
   onSearchChange,
@@ -154,21 +156,23 @@ export const TopNav: React.FC<TopNavProps> = ({
           </button>
         )}
 
-        <button
-          onClick={onSimulateInbound}
-          title="Simulate a live customer inquiry arriving from IndiaMART or WhatsApp"
-          className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-800/90 border border-slate-700/80 rounded-lg hover:bg-slate-700 hover:text-white transition-all shadow-sm active:scale-95"
-        >
-          <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-          <span>Simulate Inbound</span>
-        </button>
+        {onOpenIndiaMartModal && (
+          <button
+            onClick={onOpenIndiaMartModal}
+            title="Connect Real IndiaMART MAPI and Webhook Gateway"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 rounded-lg hover:bg-emerald-600 hover:text-white transition-all shadow-sm active:scale-95 cursor-pointer"
+          >
+            <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+            <span className="hidden md:inline">⚡ IndiaMART & Webhooks</span>
+          </button>
+        )}
 
         <button
           onClick={onOpenManualModal}
           className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg shadow-md shadow-indigo-600/30 transition-all active:scale-95 cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">+ Add Manual Inquiry</span>
+          <span className="hidden sm:inline">+ Add Customer Lead</span>
         </button>
 
         {/* Divider */}

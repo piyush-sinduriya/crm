@@ -47,6 +47,7 @@ import { UserProfileModal } from './components/UserProfileModal';
 import { BrandingModal } from './components/BrandingModal';
 import { ExportLeadsModal } from './components/ExportLeadsModal';
 import { ImportLeadsModal } from './components/ImportLeadsModal';
+import { IndiaMartSyncModal } from './components/IndiaMartSyncModal';
 import { DashboardView } from './components/DashboardView';
 import { DateRangeSelector } from './components/DateRangeSelector';
 import { PermissionRestrictedModal } from './components/PermissionRestrictedModal';
@@ -99,13 +100,13 @@ export default function App() {
     })
   );
 
-  // Logged-in User Profile State (Marcus Vance)
+  // Logged-in User Profile State (Piyush Sinduriya)
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile>({
-    name: 'Marcus Vance',
-    email: 'm.vance@omnisync.io',
+    name: 'Piyush Sinduriya',
+    email: 'piyush@schooldecor.in',
     phone: '+91 98200 38910',
-    role: 'Enterprise Sales Lead',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    role: 'Founder & Business Director',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     status: 'online',
     permissions: [
       'Full Administrator Access',
@@ -184,6 +185,7 @@ export default function App() {
   // Modals & Notifications
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isIndiaMartModalOpen, setIsIndiaMartModalOpen] = useState(false);
   const [isAddTeamModalOpen, setIsAddTeamModalOpen] = useState(false);
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
   const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
@@ -1191,6 +1193,7 @@ export default function App() {
             setIsExportModalOpen(true);
           }}
           onOpenImportModal={() => setIsImportModalOpen(true)}
+          onOpenIndiaMartModal={() => setIsIndiaMartModalOpen(true)}
           onSimulateInbound={handleSimulateInbound}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -1221,6 +1224,9 @@ export default function App() {
               }}
               onNavigateToTab={(tab) => setCurrentTab(tab)}
               onOpenManualModal={() => setIsManualModalOpen(true)}
+              onOpenImportModal={() => setIsImportModalOpen(true)}
+              onOpenIndiaMartModal={() => setIsIndiaMartModalOpen(true)}
+              onClearAllLeads={handleClearAllLeads}
               onSimulateInbound={handleSimulateInbound}
               currencySymbol={branding.currencySymbol || '₹'}
             />
@@ -1485,6 +1491,13 @@ export default function App() {
         onClose={() => setIsImportModalOpen(false)}
         onImportLeads={handleImportLeads}
         assignedAgentName={currentUserProfile.name}
+      />
+
+      {/* IndiaMART & Webhook Live Gateway Modal */}
+      <IndiaMartSyncModal
+        isOpen={isIndiaMartModalOpen}
+        onClose={() => setIsIndiaMartModalOpen(false)}
+        onImportLeads={handleImportLeads}
       />
 
       {/* Add Team Member Modal */}
