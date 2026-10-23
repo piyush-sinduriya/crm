@@ -28,6 +28,8 @@ export const RecentActivityFeed: React.FC<RecentActivityFeedProps> = ({
         return <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />;
       case 'manual_created':
         return <UserPlus className="w-3.5 h-3.5 text-violet-400" />;
+      case 'bulk_import':
+        return <FileText className="w-3.5 h-3.5 text-emerald-400" />;
       case 'note_added':
         return <FileText className="w-3.5 h-3.5 text-sky-400" />;
       default:

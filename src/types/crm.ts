@@ -97,6 +97,7 @@ export interface ActivityItem {
     | 'note_added'
     | 'agent_assigned'
     | 'manual_created'
+    | 'bulk_import'
     | 'auto_reply_sent'
     | 'sla_escalation'
     | 'template_sent';

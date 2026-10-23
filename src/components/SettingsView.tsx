@@ -41,6 +41,7 @@ import {
   Moon,
   Database,
   Key,
+  RefreshCw,
 } from 'lucide-react';
 import { replaceDynamicTags } from '../utils/automationEngine';
 import { UserRole, ThemeMode, AccentColor } from '../types/crm';

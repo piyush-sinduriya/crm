@@ -24,6 +24,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   onOpenManualModal,
   onOpenExportModal,
   onOpenImportModal,
+  onSimulateInbound,
   searchQuery,
   onSearchChange,
   activeFilterCount,
