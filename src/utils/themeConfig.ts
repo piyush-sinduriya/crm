@@ -40,15 +40,23 @@ export const ACCENT_COLORS: AccentColorOption[] = [
 
 export const getStoredTheme = (): ThemeMode => {
   if (typeof window === 'undefined') return 'dark';
-  const saved = localStorage.getItem('omnisync_theme');
-  return saved === 'light' || saved === 'dark' ? saved : 'dark';
+  try {
+    const saved = localStorage.getItem('omnisync_theme');
+    return saved === 'light' || saved === 'dark' ? saved : 'dark';
+  } catch (e) {
+    return 'dark';
+  }
 };
 
 export const getStoredAccent = (): AccentColor => {
   if (typeof window === 'undefined') return 'indigo';
-  const saved = localStorage.getItem('omnisync_accent') as AccentColor;
-  const valid = ACCENT_COLORS.some((c) => c.id === saved);
-  return valid ? saved : 'indigo';
+  try {
+    const saved = localStorage.getItem('omnisync_accent') as AccentColor;
+    const valid = ACCENT_COLORS.some((c) => c.id === saved);
+    return valid ? saved : 'indigo';
+  } catch (e) {
+    return 'indigo';
+  }
 };
 
 export const applyThemeToDocument = (theme: ThemeMode, accent: AccentColor) => {

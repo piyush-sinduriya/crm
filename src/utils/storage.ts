@@ -25,8 +25,14 @@ function safeParse<T>(raw: string | null, fallback: T): T {
 
 export function loadStoredLeads(): Lead[] {
   if (typeof window === 'undefined') return INITIAL_LEADS;
-  const raw = localStorage.getItem(KEYS.LEADS);
-  return safeParse<Lead[]>(raw, INITIAL_LEADS);
+  try {
+    const raw = localStorage.getItem(KEYS.LEADS);
+    const parsed = safeParse<Lead[]>(raw, INITIAL_LEADS);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_LEADS;
+  } catch (e) {
+    console.warn('localStorage read failed for leads:', e);
+    return INITIAL_LEADS;
+  }
 }
 
 export function saveStoredLeads(leads: Lead[]): void {
@@ -40,8 +46,14 @@ export function saveStoredLeads(leads: Lead[]): void {
 
 export function loadStoredActivities(): ActivityItem[] {
   if (typeof window === 'undefined') return INITIAL_ACTIVITIES;
-  const raw = localStorage.getItem(KEYS.ACTIVITIES);
-  return safeParse<ActivityItem[]>(raw, INITIAL_ACTIVITIES);
+  try {
+    const raw = localStorage.getItem(KEYS.ACTIVITIES);
+    const parsed = safeParse<ActivityItem[]>(raw, INITIAL_ACTIVITIES);
+    return Array.isArray(parsed) ? parsed : INITIAL_ACTIVITIES;
+  } catch (e) {
+    console.warn('localStorage read failed for activities:', e);
+    return INITIAL_ACTIVITIES;
+  }
 }
 
 export function saveStoredActivities(activities: ActivityItem[]): void {
@@ -55,8 +67,14 @@ export function saveStoredActivities(activities: ActivityItem[]): void {
 
 export function loadStoredTeam(): TeamMember[] {
   if (typeof window === 'undefined') return INITIAL_TEAM;
-  const raw = localStorage.getItem(KEYS.TEAM);
-  return safeParse<TeamMember[]>(raw, INITIAL_TEAM);
+  try {
+    const raw = localStorage.getItem(KEYS.TEAM);
+    const parsed = safeParse<TeamMember[]>(raw, INITIAL_TEAM);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_TEAM;
+  } catch (e) {
+    console.warn('localStorage read failed for team:', e);
+    return INITIAL_TEAM;
+  }
 }
 
 export function saveStoredTeam(team: TeamMember[]): void {
@@ -70,8 +88,13 @@ export function saveStoredTeam(team: TeamMember[]): void {
 
 export function loadStoredBranding(fallback: BrandConfig): BrandConfig {
   if (typeof window === 'undefined') return fallback;
-  const raw = localStorage.getItem(KEYS.BRANDING);
-  return safeParse<BrandConfig>(raw, fallback);
+  try {
+    const raw = localStorage.getItem(KEYS.BRANDING);
+    const parsed = safeParse<BrandConfig>(raw, fallback);
+    return parsed && typeof parsed === 'object' ? parsed : fallback;
+  } catch (e) {
+    return fallback;
+  }
 }
 
 export function saveStoredBranding(brand: BrandConfig): void {
@@ -85,8 +108,13 @@ export function saveStoredBranding(brand: BrandConfig): void {
 
 export function loadStoredTemplates(): MessageTemplate[] {
   if (typeof window === 'undefined') return DEFAULT_TEMPLATES;
-  const raw = localStorage.getItem(KEYS.TEMPLATES);
-  return safeParse<MessageTemplate[]>(raw, DEFAULT_TEMPLATES);
+  try {
+    const raw = localStorage.getItem(KEYS.TEMPLATES);
+    const parsed = safeParse<MessageTemplate[]>(raw, DEFAULT_TEMPLATES);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_TEMPLATES;
+  } catch (e) {
+    return DEFAULT_TEMPLATES;
+  }
 }
 
 export function saveStoredTemplates(templates: MessageTemplate[]): void {
@@ -100,8 +128,13 @@ export function saveStoredTemplates(templates: MessageTemplate[]): void {
 
 export function loadStoredAutomation(): AutomationSettings {
   if (typeof window === 'undefined') return DEFAULT_AUTOMATION_SETTINGS;
-  const raw = localStorage.getItem(KEYS.AUTOMATION);
-  return safeParse<AutomationSettings>(raw, DEFAULT_AUTOMATION_SETTINGS);
+  try {
+    const raw = localStorage.getItem(KEYS.AUTOMATION);
+    const parsed = safeParse<AutomationSettings>(raw, DEFAULT_AUTOMATION_SETTINGS);
+    return parsed && typeof parsed === 'object' ? parsed : DEFAULT_AUTOMATION_SETTINGS;
+  } catch (e) {
+    return DEFAULT_AUTOMATION_SETTINGS;
+  }
 }
 
 export function saveStoredAutomation(settings: AutomationSettings): void {
@@ -115,32 +148,47 @@ export function saveStoredAutomation(settings: AutomationSettings): void {
 
 export function getStoredGeminiApiKey(): string {
   if (typeof window === 'undefined') return '';
-  const stored = localStorage.getItem(KEYS.GEMINI_API_KEY);
-  if (stored) return stored;
-  // Fallback to Vite env var if configured
-  return (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.GEMINI_API_KEY || '';
+  try {
+    const stored = localStorage.getItem(KEYS.GEMINI_API_KEY);
+    if (stored) return stored;
+    return (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.GEMINI_API_KEY || '';
+  } catch (e) {
+    return '';
+  }
 }
 
 export function setStoredGeminiApiKey(apiKey: string): void {
   if (typeof window === 'undefined') return;
-  if (!apiKey) {
-    localStorage.removeItem(KEYS.GEMINI_API_KEY);
-  } else {
-    localStorage.setItem(KEYS.GEMINI_API_KEY, apiKey.trim());
+  try {
+    if (!apiKey) {
+      localStorage.removeItem(KEYS.GEMINI_API_KEY);
+    } else {
+      localStorage.setItem(KEYS.GEMINI_API_KEY, apiKey.trim());
+    }
+  } catch (err) {
+    console.error('Failed to save API key:', err);
   }
 }
 
 export function resetAllStorageToDemo(): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(KEYS.LEADS, JSON.stringify(INITIAL_LEADS));
-  localStorage.setItem(KEYS.ACTIVITIES, JSON.stringify(INITIAL_ACTIVITIES));
-  localStorage.setItem(KEYS.TEAM, JSON.stringify(INITIAL_TEAM));
-  localStorage.setItem(KEYS.TEMPLATES, JSON.stringify(DEFAULT_TEMPLATES));
-  localStorage.setItem(KEYS.AUTOMATION, JSON.stringify(DEFAULT_AUTOMATION_SETTINGS));
+  try {
+    localStorage.setItem(KEYS.LEADS, JSON.stringify(INITIAL_LEADS));
+    localStorage.setItem(KEYS.ACTIVITIES, JSON.stringify(INITIAL_ACTIVITIES));
+    localStorage.setItem(KEYS.TEAM, JSON.stringify(INITIAL_TEAM));
+    localStorage.setItem(KEYS.TEMPLATES, JSON.stringify(DEFAULT_TEMPLATES));
+    localStorage.setItem(KEYS.AUTOMATION, JSON.stringify(DEFAULT_AUTOMATION_SETTINGS));
+  } catch (e) {
+    console.warn('Failed to reset storage:', e);
+  }
 }
 
 export function clearAllLeadsStorage(): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(KEYS.LEADS, JSON.stringify([]));
-  localStorage.setItem(KEYS.ACTIVITIES, JSON.stringify([]));
+  try {
+    localStorage.setItem(KEYS.LEADS, JSON.stringify([]));
+    localStorage.setItem(KEYS.ACTIVITIES, JSON.stringify([]));
+  } catch (e) {
+    console.warn('Failed to clear leads storage:', e);
+  }
 }
